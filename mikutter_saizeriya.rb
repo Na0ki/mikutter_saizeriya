@@ -3,9 +3,9 @@
 require "yaml"
 
 module Plugin::Saizeriya
-  MENU_TYPES = ["grand_menu", "takeout_menu"].reject {|type| type == "takeout_menu" && !UserConfig[:saizeriya_use_takeout_menu]}
-  MENU = open(File.join(__dir__, 'menu.yml'), "r") {|f| YAML.load(f) }.fetch_values(*MENU_TYPES).reduce(&:merge)
-  KEY_MATCHER = Regexp.union(*MENU.keys)
+  MENU_TYPES = ["grand_menu", "takeout_menu"]
+  GRAND_MENU, TAKEOUT_MENU = YAML.load_file(File.join(__dir__, 'menu.yml')).values_at(*MENU_TYPES)
+  KEY_MATCHER = Regexp.union(*GRAND_MENU.keys + TAKEOUT_MENU.keys)
 
   class SaizeriyaNote < Diva::Model
     register :score_text, name: "Saizeriya Note"
@@ -13,7 +13,11 @@ module Plugin::Saizeriya
     field.string :code, required: true
 
     def description
-      MENU[code]
+      if UserConfig[:saizeriya_use_takeout_menu]
+        GRAND_MENU[code] || TAKEOUT_MENU[code] || code
+      else
+        GRAND_MENU[code] || code
+      end
     end
 
     def inspect
