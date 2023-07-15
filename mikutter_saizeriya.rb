@@ -3,7 +3,8 @@
 require "yaml"
 
 module Plugin::Saizeriya
-  MENU = open(File.join(__dir__, 'menu.yml'), "r") {|f| YAML.load(f) }
+  MENU_TYPES = ["grand_menu", "takeout_menu"].reject {|type| type == "takeout_menu" && !UserConfig[:saizeriya_use_takeout_menu]}
+  MENU = open(File.join(__dir__, 'menu.yml'), "r") {|f| YAML.load(f) }.fetch_values(*MENU_TYPES).reduce(&:merge)
   KEY_MATCHER = Regexp.union(*MENU.keys)
 
   class SaizeriyaNote < Diva::Model
@@ -47,4 +48,7 @@ Plugin.create(:mikutter_saizeriya) do
     [target_model, note, yielder]
   end
 
+  settings("saizeriya") do
+    boolean("お持ち帰りメニューを含める", :saizeriya_use_takeout_menu)
+  end
 end
